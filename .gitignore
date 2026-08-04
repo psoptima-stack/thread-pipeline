@@ -1,0 +1,11 @@
+# 비밀값 — 절대 GitHub에 올리지 않음 (GitHub Secret으로 주입)
+email/email_config.ini
+threads/threads_config.ini
+
+# 파이썬 캐시/가상환경
+.venv/
+__pycache__/
+*.pyc
+
+# Claude Code 로컬 설정
+.claude/
