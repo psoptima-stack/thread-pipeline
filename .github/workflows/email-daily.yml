@@ -1,0 +1,20 @@
+name: 매일 발행 이메일 (오후 1시 KST)
+
+on:
+  schedule:
+    # 04:00 UTC = 13:00 KST (한국 오후 1시). GitHub 크론은 UTC 기준.
+    - cron: '0 4 * * *'
+  workflow_dispatch: {}   # GitHub 화면에서 수동 실행 버튼
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 이메일 발송
+        env:
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: python email/send_today_post.py
