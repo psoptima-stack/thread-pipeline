@@ -20,6 +20,7 @@ import os
 import smtplib
 import ssl
 import sys
+import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.header import Header
@@ -152,10 +153,25 @@ def main():
     msg.attach(MIMEText(text_fallback, "plain", "utf-8"))
     msg.attach(MIMEText(full_html, "html", "utf-8"))
 
+    # 네이버 SMTP가 일시적으로 거부하는 경우가 있어 재시도. 인증 실패는 재시도 무의미.
     context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(s["host"], int(s["port"]), context=context) as server:
-        server.login(s["user"], s["password"])
-        server.sendmail(s["from_addr"], [s["to_addr"]], msg.as_string())
+    delays = [5, 15, 45]
+    for attempt in range(len(delays) + 1):
+        try:
+            with smtplib.SMTP_SSL(s["host"], int(s["port"]), context=context) as server:
+                server.login(s["user"], s["password"])
+                server.sendmail(s["from_addr"], [s["to_addr"]], msg.as_string())
+            break
+        except smtplib.SMTPAuthenticationError as e:
+            print(f"[중단] 로그인 실패 — 앱 비밀번호를 확인하세요: {e}")
+            sys.exit(1)
+        except (smtplib.SMTPException, OSError) as e:
+            if attempt >= len(delays):
+                print(f"[중단] 메일 발송 실패({len(delays) + 1}회 시도): {e}")
+                sys.exit(1)
+            wait = delays[attempt]
+            print(f"  [재시도] 발송 실패({e}) / {wait}초 후 {attempt + 2}번째 시도")
+            time.sleep(wait)
 
     print(f"[완료] {target_date} '{title}' 메일 발송 성공 → {s['to_addr']}")
 
