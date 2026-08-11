@@ -1,0 +1,67 @@
+name: 발행일 페이스북 페이지 자동 게시 (오후 8시 KST)
+
+on:
+  schedule:
+    # 11:00 UTC = 20:00 KST (한국 오후 8시). 발행일정에 오늘 글이 없으면 조용히 종료.
+    - cron: '0 11 * * *'
+  workflow_dispatch:      # GitHub 화면에서 수동 실행 버튼
+    inputs:
+      date:
+        description: '게시할 날짜 (YYYY-MM-DD). 비우면 오늘 날짜'
+        required: false
+        default: ''
+      restart:
+        description: '이미 게시한 날짜라도 다시 게시(중복 주의)'
+        type: boolean
+        default: false
+
+# 진행 기록(facebook/progress)을 저장소에 되돌려 커밋하기 위해 쓰기 권한 필요.
+permissions:
+  contents: write
+
+# 같은 날 두 번 겹쳐 돌면 중복 게시 위험이 있으므로 동시 실행 금지.
+concurrency:
+  group: facebook-daily
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 의존성 설치
+        run: pip install requests
+      - name: 페이스북 게시
+        env:
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          # 셸에 직접 끼워 넣지 않고 환경변수로 받아서 처리
+          IN_DATE: ${{ inputs.date }}
+          IN_RESTART: ${{ inputs.restart }}
+        run: |
+          ARGS=""
+          if [ -n "$IN_DATE" ]; then
+            ARGS="$ARGS --date $IN_DATE"
+          fi
+          if [ "$IN_RESTART" = "true" ]; then
+            ARGS="$ARGS --restart"
+          fi
+          python facebook/post_to_facebook.py $ARGS
+
+      # 성공하든 실패하든 진행 기록을 남겨야 중복 게시를 막을 수 있음.
+      - name: 진행 기록 저장
+        if: always()
+        run: |
+          if [ -z "$(git status --porcelain facebook/progress)" ]; then
+            echo "변경된 진행 기록 없음"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add facebook/progress
+          git commit -m "페이스북 게시 진행 기록 [skip ci]"
+          git pull --rebase --autostash origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}

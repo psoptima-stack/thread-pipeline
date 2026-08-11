@@ -1,6 +1,11 @@
 # 비밀값 — 절대 GitHub에 올리지 않음 (GitHub Secret으로 주입)
 email/email_config.ini
 threads/threads_config.ini
+facebook/facebook_config.ini
+
+# 로컬 실행 로그(run_*.bat 이 남김)
+log.txt
+*/log.txt
 
 # 파이썬 캐시/가상환경
 .venv/
