@@ -108,6 +108,12 @@ def cmd_refresh(args):
         "access_token": args.token,
     }, timeout=30), "토큰 갱신")
     days = int(data.get("expires_in", 0)) // 86400
+
+    if args.raw:
+        # 워크플로에서 값만 받아 Secret 에 넣기 위한 출력
+        print(data["access_token"])
+        return
+
     print("=" * 60)
     print(f"IG_ACCESS_TOKEN = {data['access_token']}")
     print(f"유효기간         = 약 {days}일")
@@ -133,6 +139,8 @@ def main():
 
     p = sub.add_parser("refresh", help="60일 토큰 갱신(24시간 이상 지난 토큰만 가능)")
     p.add_argument("--token", required=True)
+    p.add_argument("--raw", action="store_true",
+                   help="새 토큰 값만 출력(워크플로 자동 갱신용)")
     p.set_defaults(func=cmd_refresh)
 
     args = ap.parse_args()
