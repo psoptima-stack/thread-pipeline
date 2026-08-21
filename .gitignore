@@ -2,6 +2,10 @@
 email/email_config.ini
 threads/threads_config.ini
 facebook/facebook_config.ini
+instagram/instagram_config.ini
+
+# 카드 미리보기용 PNG (인스타에 올라가는 건 jpg 뿐)
+instagram/cards/**/*.png
 
 # 로컬 실행 로그(run_*.bat 이 남김)
 log.txt
